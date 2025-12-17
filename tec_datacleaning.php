@@ -22,7 +22,7 @@ class Tec_datacleaning extends Module
     {
         $this->name = 'tec_datacleaning';
         $this->tab = 'quick_bulk_update';
-        $this->version = '1.0.3';
+        $this->version = '1.0.4';
         $this->author = 'Tecnoacquisti.com';
         $this->need_instance = 0;
 

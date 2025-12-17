@@ -6,6 +6,33 @@ Always review security notes before running destructive operations (TRUNCATE, DE
 ## [Unreleased]
 - Small improvements and minor bugfixes in progress.
 
+## [1.0.4] - 2025-12-17
+### Added
+- Admin validation improvements: form now collects validation errors and only persists settings when all validations pass.
+- `computeModuleSecureKey()` helper to compute or provide a persistent `secure_key` deterministically; the helper returns the sentinel `NOKEY` when no key is available.
+- Safe-guard logging when legacy configuration is present: the module logs the presence of non-JSON configuration for selected tables and ignores it for safety.
+
+### Changed
+- Security: replaced all uses of `serialize()`/`unserialize()` with `json_encode()`/`json_decode()` for storing `TEC_DATACLEANIG_SELECTED_TABLES` (avoids unsafe deserialization of untrusted data).
+- Admin form handling: the secure key posted by the admin is validated and only saved if the full form validation succeeds (prevents partial saves that previously produced both error and success messages).
+- Selected tables persistence: stored as JSON; on read the code accepts only valid JSON and intentionally ignores legacy serialized values (admin must re-save in BO to migrate to JSON).
+- Cron controller: updated to read selected tables from JSON (and to log/ignore legacy serialized values). The cron endpoint still accepts only `secure_key` for authentication.
+- `uninstall()` now cleans up all module configuration keys (`MONTHS`, `BATCH_SIZE`, `SELECTED_TABLES`, `SECURE_KEY`) and attempts a best-effort unregister of `displayBackOfficeHeader` (errors are logged but do not block uninstall).
+- Improved handling of helper form checkbox POST shapes: the admin UI accepts both array shapes and checkbox-keyed POSTs.
+
+### Fixed
+- Prevented the scenario where an invalid posted secure key was saved before other validation errors were detected (which produced confusing duplicate messages).
+- Ensured the module does not unserialize legacy data automatically for safety; instead the admin is prompted (via logs and UI behavior) to re-save configuration to migrate.
+
+### Security
+- Avoided unsafe PHP deserialization (serialize/unserialize) for module configuration storage — migrated to JSON.
+- The cron endpoint validation logic is centralized and more robust; when no usable key is available the API responds with a clear `NOKEY` notice and an appropriate HTTP error.
+- Continued recommendation: protect the cron endpoint (IP whitelist, HTTPS, and/or additional access controls).
+
+### Notes / Warnings
+- Legacy configuration values saved with `serialize()` will be ignored by the new code for safety — to migrate, open the module configuration in Back Office, re-select the desired tables and save (this will persist them as JSON).
+- Always execute `dry_run=1` and take a DB backup before running destructive operations (TRUNCATE or DELETE).
+
 ## [1.0.3] - 2025-12-17
 ### Added
 - Advanced cron endpoint for automated cleaning: `module/tec_datacleaning/cron` (authenticated via `secure_key`).

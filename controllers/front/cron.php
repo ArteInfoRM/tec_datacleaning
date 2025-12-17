@@ -6,7 +6,7 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-class Tec_datacleanincdgCronModuleFrontController extends ModuleFrontController
+class Tec_datacleaningCronModuleFrontController extends ModuleFrontController
 {
     public function initContent()
     {
@@ -23,10 +23,29 @@ class Tec_datacleanincdgCronModuleFrontController extends ModuleFrontController
         $moduleName = ($moduleInstance && !empty($moduleInstance->name)) ? $moduleInstance->name : 'tec_datacleaning';
 
         $expectedToken = '';
-        if (defined('_COOKIE_KEY_')) {
-            $expectedToken = md5(_COOKIE_KEY_ . $moduleName);
-        } elseif (class_exists('Tools') && method_exists('Tools', 'encrypt')) {
-            $expectedToken = Tools::encrypt($moduleName);
+        // Prefer module-provided secure key if module instance is available and exposes the helper
+        if ($moduleInstance && method_exists($moduleInstance, 'computeModuleSecureKey')) {
+            try {
+                $expectedToken = $moduleInstance->computeModuleSecureKey();
+            } catch (Exception $e) {
+                // If module method throws, ignore and try configuration fallback below
+                $expectedToken = '';
+            }
+        }
+
+        // If module instance wasn't available or didn't return a key, use persisted Configuration value
+        // Try persisted Configuration value (Configuration::get is always available in PrestaShop)
+        $cfgKey = Configuration::get('TEC_DATACLEANIG_SECURE_KEY');
+        if (empty($expectedToken) && !empty($cfgKey)) {
+            $expectedToken = $cfgKey;
+        }
+
+        // If module explicitly signals that no key is configured, inform caller
+        if ($expectedToken === 'NOKEY') {
+            header('HTTP/1.1 400 Bad Request');
+            header('Content-Type: application/json; charset=UTF-8');
+            echo json_encode(array('success' => false, 'message' => 'secure_key non impostata nella configurazione'));
+            exit;
         }
 
         if (empty($token) || $token !== $expectedToken) {
@@ -54,10 +73,15 @@ class Tec_datacleanincdgCronModuleFrontController extends ModuleFrontController
         // Get selected tables
         $cfg = Configuration::get('TEC_DATACLEANIG_SELECTED_TABLES');
         $selected = array();
-        if ($cfg) {
-            $un = @unserialize($cfg, ['allowed_classes' => false]);
-            if (is_array($un)) {
-                $selected = $un;
+        if (!empty($cfg)) {
+            $decoded = json_decode($cfg, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $selected = $decoded;
+            } else {
+                // Legacy serialized data is ignored for security; admin should re-save settings in BO to migrate
+                if (class_exists('Logger')) {
+                    Logger::addLog('tec_datacleaning cron: selected tables config is not valid JSON; ignoring legacy serialized data for safety', 3);
+                }
             }
         }
 

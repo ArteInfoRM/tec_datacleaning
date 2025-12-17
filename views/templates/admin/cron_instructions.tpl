@@ -1,5 +1,14 @@
 {*
-  Cron instructions for Tec Datacleanig module
+**
+*  2009-2025 Arte e Informatica
+*
+*  For support feel free to contact us on our website at https://www.tecnoacquisti.com/
+*
+*  @author    Arte e Informatica <helpdesk@tecnoacquisti.com>
+*  @copyright 2009-2025 Arte e Informatica
+*  @version   1.0.0
+*  @license   One Paid Licence By WebSite Using This Module. No Rent. No Sell. No Share.
+*
 *}
 <div class="panel">
     <div class="panel-heading">

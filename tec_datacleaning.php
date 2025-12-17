@@ -22,7 +22,7 @@ class Tec_datacleaning extends Module
     {
         $this->name = 'tec_datacleaning';
         $this->tab = 'quick_bulk_update';
-        $this->version = '1.0.4';
+        $this->version = '1.0.5';
         $this->author = 'Tecnoacquisti.com';
         $this->need_instance = 0;
 
@@ -56,16 +56,28 @@ class Tec_datacleaning extends Module
         // Default selected tables: use the allowed tables list
         $defaultTables = $this->getAllowedTables();
         if (!empty($defaultTables)) {
-            Configuration::updateValue('TEC_DATACLEANIG_SELECTED_TABLES', serialize($defaultTables));
+            // Use JSON for safe persistence instead of serialize()
+            Configuration::updateValue('TEC_DATACLEANIG_SELECTED_TABLES', json_encode(array_values($defaultTables)));
         }
 
+        // Ensure a persistent secure key exists for cron usage
+        // Persist secure key using the module helper but only if there isn't one yet
+        if (!Configuration::get('TEC_DATACLEANIG_SECURE_KEY')) {
+            $computed = $this->computeModuleSecureKey();
+            if ($computed !== 'NOKEY') {
+                Configuration::updateValue('TEC_DATACLEANIG_SECURE_KEY', $computed);
+            }
+        }
         return true;
+
     }
 
     public function uninstall()
     {
         Configuration::deleteByName('TEC_DATACLEANIG_MONTHS');
-
+        Configuration::deleteByName('TEC_DATACLEANIG_BATCH_SIZE');
+        Configuration::deleteByName('TEC_DATACLEANIG_SELECTED_TABLES');
+        Configuration::deleteByName('TEC_DATACLEANIG_SECURE_KEY');
         return parent::uninstall();
     }
 
@@ -89,60 +101,95 @@ class Tec_datacleaning extends Module
          * If values have been submitted in the form, process.
          */
         if (((bool)Tools::isSubmit('submitTec_datacleanigModule')) == true) {
-            $monthsToKeep = (int)Tools::getValue('TEC_DATACLEANIG_MONTHS');
-            // Read selected tables robustly: handle HelperForm checkbox naming and array POST
-            $selectedTables = array();
-            // 1) If HelperForm posted array directly
-            $postedArray = Tools::getValue('TEC_DATACLEANIG_SELECTED_TABLES');
-            if (is_array($postedArray)) {
-                // Two possible shapes:
-                // a) associative array: ['ps_connections' => 1, 'ps_log' => 1]
-                // b) sequential array: ['ps_connections', 'ps_log']
-                $allValuesNumeric = true;
-                foreach ($postedArray as $k => $v) {
-                    if (!is_numeric($v)) {
-                        $allValuesNumeric = false;
-                        break;
-                    }
+            // Collect form errors and show them together; avoid showing Success when there are errors
+            $formErrors = array();
+             $monthsToKeep = (int)Tools::getValue('TEC_DATACLEANIG_MONTHS');
+             // Read selected tables robustly: handle HelperForm checkbox naming and array POST
+             $selectedTables = array();
+             // 1) If HelperForm posted array directly
+             $postedArray = Tools::getValue('TEC_DATACLEANIG_SELECTED_TABLES');
+             if (is_array($postedArray)) {
+                 // Two possible shapes:
+                 // a) associative array: ['ps_connections' => 1, 'ps_log' => 1]
+                 // b) sequential array: ['ps_connections', 'ps_log']
+                 $allValuesNumeric = true;
+                 foreach ($postedArray as $k => $v) {
+                     if (!is_numeric($v)) {
+                         $allValuesNumeric = false;
+                         break;
+                     }
+                 }
+                 if ($allValuesNumeric && count($postedArray) > 0) {
+                     // associative or numeric values -> use keys as table names
+                     $selectedTables = array_keys(array_filter($postedArray));
+                 } else {
+                     // sequential list of table names
+                     $selectedTables = array_values($postedArray);
+                 }
+             }
+
+             // Save custom secure key if provided by admin in the form
+             // Read posted secure key but do NOT persist yet. Persist only if all validations pass.
+             $newPostedKey = null;
+             $postedKey = Tools::getValue('TEC_DATACLEANIG_SECURE_KEY');
+             if (is_string($postedKey)) {
+                 $postedKey = trim($postedKey);
+                 // Reject empty or sentinel 'NOKEY' values (case-insensitive)
+                 if ($postedKey === '' || strcasecmp($postedKey, 'NOKEY') === 0) {
+                     $formErrors[] = $this->l('Secure key is not valid. Please provide a valid key.');
+                 } else {
+                     // keep value to persist later
+                     $newPostedKey = $postedKey;
+                 }
+             }
+
+             // 2) Scan raw POST for checkbox-style keys generated by HelperForm: TEC_DATACLEANIG_SELECTED_TABLES_table_name or TEC_DATACLEANIG_SELECTED_TABLES[table_name]
+             foreach ($_POST as $k => $v) {
+                 if (strpos($k, 'TEC_DATACLEANIG_SELECTED_TABLES') === 0) {
+                     if (preg_match('/^TEC_DATACLEANIG_SELECTED_TABLES(?:[_\\[])?(.+?)(?:\\])?$/', $k, $m)) {
+                         $tbl = $m[1];
+                         if ($tbl !== '') {
+                             $selectedTables[] = $tbl;
+                         }
+                     }
+                 }
+             }
+             // Normalize and unique
+             $selectedTables = array_values(array_unique(array_filter($selectedTables)));
+              $batchSizeConfig = (int)Tools::getValue('TEC_DATACLEANIG_BATCH_SIZE');
+             // Validate months value
+             if ($monthsToKeep <= 0) {
+                 $formErrors[] = $this->l('The number of months must be a positive value.');
+             }
+
+            // If there are errors, append them to output and skip persisting settings
+            if (!empty($formErrors)) {
+                foreach ($formErrors as $err) {
+                    $output .= $this->displayError($err);
                 }
-                if ($allValuesNumeric && count($postedArray) > 0) {
-                    // associative or numeric values -> use keys as table names
-                    $selectedTables = array_keys(array_filter($postedArray));
-                } else {
-                    // sequential list of table names
-                    $selectedTables = array_values($postedArray);
-                }
-            }
-            // 2) Scan raw POST for checkbox-style keys generated by HelperForm: TEC_DATACLEANIG_SELECTED_TABLES_table_name or TEC_DATACLEANIG_SELECTED_TABLES[table_name]
-            foreach ($_POST as $k => $v) {
-                if (strpos($k, 'TEC_DATACLEANIG_SELECTED_TABLES') === 0) {
-                    if (preg_match('/^TEC_DATACLEANIG_SELECTED_TABLES(?:[_\[])?(.+?)(?:\])?$/', $k, $m)) {
-                        $tbl = $m[1];
-                        if ($tbl !== '') {
-                            $selectedTables[] = $tbl;
-                        }
-                    }
-                }
-            }
-            // Normalize and unique
-            $selectedTables = array_values(array_unique(array_filter($selectedTables)));
-             $batchSizeConfig = (int)Tools::getValue('TEC_DATACLEANIG_BATCH_SIZE');
-             if ($monthsToKeep > 0) {
-                 Configuration::updateValue('TEC_DATACLEANIG_MONTHS', $monthsToKeep);
-                 // Save selected tables and batch size
+                // Render the form so admin can correct values and return immediately (no success message)
+                $output .= $this->renderForm();
+                return $output;
+            } else {
+                // Persist the numeric settings
+                Configuration::updateValue('TEC_DATACLEANIG_MONTHS', $monthsToKeep);
+                // Save selected tables and batch size
                 if (!empty($selectedTables) && is_array($selectedTables)) {
-                    Configuration::updateValue('TEC_DATACLEANIG_SELECTED_TABLES', serialize($selectedTables));
+                    // Persist selected tables as JSON (safe alternative to serialize)
+                    Configuration::updateValue('TEC_DATACLEANIG_SELECTED_TABLES', json_encode(array_values($selectedTables)));
                 } else {
                     // ensure we clear the config if nothing selected
                     Configuration::deleteByName('TEC_DATACLEANIG_SELECTED_TABLES');
                 }
-                 if ($batchSizeConfig > 0) {
-                     Configuration::updateValue('TEC_DATACLEANIG_BATCH_SIZE', $batchSizeConfig);
-                 }
-                 $output .= $this->displayConfirmation($this->l('Settings updated successfully.'));
-             } else {
-                 $output .= $this->displayError($this->l('The number of months must be a positive value.'));
-             }
+                if ($batchSizeConfig > 0) {
+                    Configuration::updateValue('TEC_DATACLEANIG_BATCH_SIZE', $batchSizeConfig);
+                }
+                // Persist secure key only now (after all validations passed)
+                if (!empty($newPostedKey)) {
+                    Configuration::updateValue('TEC_DATACLEANIG_SECURE_KEY', $newPostedKey);
+                }
+                $output .= $this->displayConfirmation($this->l('Settings updated successfully.'));
+            }
          }
 
         if (Tools::isSubmit('submitCleanData')) {
@@ -172,13 +219,19 @@ class Tec_datacleaning extends Module
         $shop_base_url = $this->context->link->getBaseLink((int)$this->context->shop->id, $useSsl);
 
         $stats = $this->getTableStats();
-        // Prepare config values for the form
+        // Prepare config values for the form (stored as JSON). If not valid JSON we ignore it for security.
         $configuredTables = array();
         $cfg = Configuration::get('TEC_DATACLEANIG_SELECTED_TABLES');
-        if ($cfg) {
-            $cfgUn = @unserialize($cfg, ['allowed_classes' => false]);
-            if (is_array($cfgUn)) {
-                $configuredTables = $cfgUn;
+        if (!empty($cfg)) {
+            $decoded = json_decode($cfg, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $configuredTables = $decoded;
+            } else {
+                // Legacy serialized data (from older versions) is intentionally not unserialized for security reasons.
+                // Admin can re-save selections in BO to migrate to the new JSON format.
+                if (class_exists('Logger')) {
+                    Logger::addLog('tec_datacleaning: selected tables config is not valid JSON; ignoring legacy serialized data for safety', 3);
+                }
             }
         }
         $batchSizeConfig = (int)Configuration::get('TEC_DATACLEANIG_BATCH_SIZE');
@@ -205,13 +258,7 @@ class Tec_datacleaning extends Module
         $tplTablestats = $moduleDir . 'views/templates/admin/tablestats.tpl';
         $tplCron = $moduleDir . 'views/templates/admin/cron_instructions.tpl';
         // Compute the token used for cron/auth: prefer md5(_COOKIE_KEY_ . module_name)
-        if (defined('_COOKIE_KEY_')) {
-            $module_secure_key = md5(_COOKIE_KEY_ . $this->name);
-        } elseif (class_exists('Tools') && method_exists('Tools', 'encrypt')) {
-            $module_secure_key = Tools::encrypt($this->name);
-        } else {
-            $module_secure_key = md5(uniqid($this->name, true));
-        }
+        $module_secure_key = $this->computeModuleSecureKey();
         // Assign module token to smarty (if needed by templates) — no debug panels
         $this->context->smarty->assign('module_secure_key', $module_secure_key);
         $tplCopyright = $moduleDir . 'views/templates/admin/copyright.tpl';
@@ -265,8 +312,24 @@ class Tec_datacleaning extends Module
             .'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name;
         $helper->token = Tools::getAdminTokenLite('AdminModules');
 
+        // Get default fields
+        $fields = $this->getConfigFormValues();
+        // If the admin submitted the form, prefer the persisted Configuration value (so the admin sees the saved key)
+        if (Tools::isSubmit('submitTec_datacleanigModule')) {
+            $persisted = Configuration::get('TEC_DATACLEANIG_SECURE_KEY');
+            if (!empty($persisted) && strcasecmp($persisted, 'NOKEY') !== 0) {
+                $fields['TEC_DATACLEANIG_SECURE_KEY'] = $persisted;
+            } else {
+                // If persistence didn't occur (for example validation failed), prefer the posted value so admin can fix it
+                if (isset($_POST['TEC_DATACLEANIG_SECURE_KEY'])) {
+                    $postedKey = is_array($_POST['TEC_DATACLEANIG_SECURE_KEY']) ? '' : trim((string)$_POST['TEC_DATACLEANIG_SECURE_KEY']);
+                    $fields['TEC_DATACLEANIG_SECURE_KEY'] = $postedKey;
+                }
+            }
+        }
+
         $helper->tpl_vars = array(
-            'fields_value' => $this->getConfigFormValues(), /* Add values for your inputs */
+            'fields_value' => $fields, /* Add values for your inputs */
             'languages' => $this->context->controller->getLanguages(),
             'id_language' => $this->context->language->id,
         );
@@ -298,9 +361,9 @@ class Tec_datacleaning extends Module
                         'type' => 'text',
                         'label' => $this->l('Module secure key'),
                         'name' => 'TEC_DATACLEANIG_SECURE_KEY',
-                        'readonly' => true,
+                        'required' => true,
                         'class' => 'fixed-width-xl',
-                        'desc' => $this->l('Copy this value to use in your cron URL (read-only).'),
+                        'desc' => $this->l('Copy this value to use in your cron URL.'),
                     ),
                     array(
                         'type' => 'select',
@@ -351,19 +414,24 @@ class Tec_datacleaning extends Module
     protected function getConfigFormValues()
     {
         // Deserialize selected tables for the helper form
-        $selectedSerialized = Configuration::get('TEC_DATACLEANIG_SELECTED_TABLES');
         $selectedTables = array();
-        if ($selectedSerialized) {
-            $un = @unserialize($selectedSerialized, ['allowed_classes' => false]);
-            if (is_array($un)) {
-                $selectedTables = $un;
+        $selectedSerialized = Configuration::get('TEC_DATACLEANIG_SELECTED_TABLES');
+        if (!empty($selectedSerialized)) {
+            $decoded = json_decode($selectedSerialized, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $selectedTables = $decoded;
+            } else {
+                // Do not unserialize legacy data for security reasons; log and continue with empty selection.
+                if (class_exists('Logger')) {
+                    Logger::addLog('tec_datacleaning: could not parse selected tables config as JSON; legacy serialized data is ignored', 3);
+                }
             }
         }
 
         // Build fields_value expected by HelperForm for checkbox inputs: create keys like 'TEC_DATACLEANIG_SELECTED_TABLES_<table>' => 1
         $fields = array(
-            'TEC_DATACLEANIG_MONTHS' => Configuration::get('TEC_DATACLEANIG_MONTHS', true),
-            'TEC_DATACLEANIG_BATCH_SIZE' => Configuration::get('TEC_DATACLEANIG_BATCH_SIZE', true),
+            'TEC_DATACLEANIG_MONTHS' => Configuration::get('TEC_DATACLEANIG_MONTHS'),
+            'TEC_DATACLEANIG_BATCH_SIZE' => Configuration::get('TEC_DATACLEANIG_BATCH_SIZE'),
         );
 
         foreach ($this->getAllowedTables() as $tbl) {
@@ -371,20 +439,29 @@ class Tec_datacleaning extends Module
             $fields[$key] = in_array($tbl, $selectedTables) ? 1 : 0;
         }
 
-        // Show deterministic token in form: md5(_COOKIE_KEY_ . module_name) if available; otherwise use fallback
-        if (defined('_COOKIE_KEY_')) {
-            $module_secure_key = md5(_COOKIE_KEY_ . $this->name);
-        } elseif (class_exists('Tools') && method_exists('Tools', 'encrypt')) {
-            $module_secure_key = Tools::encrypt($this->name);
-        } else {
-            $module_secure_key = md5(uniqid($this->name, true));
-        }
-        // Do not log secure key (sensitive) to avoid exposing it in logs.
-
-        $fields['TEC_DATACLEANIG_SECURE_KEY'] = $module_secure_key;
+        // Show persisted secure key in form if present; otherwise empty string to allow admin input
+        $persisted = Configuration::get('TEC_DATACLEANIG_SECURE_KEY');
+        $fields['TEC_DATACLEANIG_SECURE_KEY'] = !empty($persisted) && $persisted !== 'NOKEY' ? $persisted : '';
 
          return $fields;
      }
+
+    public function computeModuleSecureKey()
+    {
+        // 1) If admin already set/edited a secure key in Configuration, use it
+        $cfg = Configuration::get('TEC_DATACLEANIG_SECURE_KEY');
+        if (!empty($cfg)) {
+            return $cfg;
+        }
+
+        // 2) If PrestaShop cookie key is available, keep legacy behaviour (do NOT persist here)
+        if (defined('_COOKIE_KEY_')) {
+            return md5(_COOKIE_KEY_ . $this->name);
+        }
+
+        // 3) No cookie key and no persisted key: signal explicitly that no key is available
+        return 'NOKEY';
+    }
 
     public function getAllowedTables()
     {

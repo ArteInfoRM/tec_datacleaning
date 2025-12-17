@@ -6,7 +6,7 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-class Tec_datacleanigCronModuleFrontController extends ModuleFrontController
+class Tec_datacleanincdgCronModuleFrontController extends ModuleFrontController
 {
     public function initContent()
     {
@@ -18,9 +18,9 @@ class Tec_datacleanigCronModuleFrontController extends ModuleFrontController
         // Compute deterministic token as used in other modules
         $moduleInstance = null;
         if (class_exists('Module')) {
-            $moduleInstance = Module::getInstanceByName('tec_datacleanig');
+            $moduleInstance = Module::getInstanceByName('tec_datacleaning');
         }
-        $moduleName = ($moduleInstance && !empty($moduleInstance->name)) ? $moduleInstance->name : 'tec_datacleanig';
+        $moduleName = ($moduleInstance && !empty($moduleInstance->name)) ? $moduleInstance->name : 'tec_datacleaning';
 
         $expectedToken = '';
         if (defined('_COOKIE_KEY_')) {
@@ -72,7 +72,7 @@ class Tec_datacleanigCronModuleFrontController extends ModuleFrontController
             if (isset($this->module) && is_object($this->module) && method_exists($this->module, 'getAllowedTables')) {
                 $allowedTables = $this->module->getAllowedTables();
             } elseif (class_exists('Module')) {
-                $mod = Module::getInstanceByName('tec_datacleanig');
+                $mod = Module::getInstanceByName('tec_datacleaning');
                 if ($mod && method_exists($mod, 'getAllowedTables')) {
                     $allowedTables = $mod->getAllowedTables();
                 }

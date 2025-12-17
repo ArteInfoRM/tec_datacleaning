@@ -1,4 +1,4 @@
-# Database Stats Cleaning (Tec Datacleanig)
+# Database Stats Cleaning 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Built for PrestaShop](https://img.shields.io/badge/Built%20for-PrestaShop-DF0067?logo=prestashop&logoColor=white)
@@ -11,7 +11,7 @@ Tec Datacleanig is a PrestaShop module to safely clean and maintain database tab
 
 ## Key features
 
-- Automated cron endpoint for scheduled cleaning: `/module/tec_datacleanig/cron` (authenticated via `secure_key`).
+- Automated cron endpoint for scheduled cleaning: `/module/tec_datacleaning/cron` (authenticated via `secure_key`).
 - `truncate=1` fast-clean option to empty selected statistic tables.
 - `dry_run=1` mode for both truncate and clean operations to preview how many rows would be removed without changing the database.
 - Batched `DELETE` fallback if `TRUNCATE` is not allowed (permission issues or foreign-key constraints) — configurable batch size.
@@ -29,7 +29,7 @@ Tec Datacleanig is a PrestaShop module to safely clean and maintain database tab
 
 ## Installation
 
-1. Upload the `tec_datacleanig` module folder to your PrestaShop `modules/` directory.
+1. Upload the `tec_datacleaning` module folder to your PrestaShop `modules/` directory.
 2. Install the module from the PrestaShop Back Office (Modules -> Module Manager).
 3. Open the module configuration page and review the pre-selected tables. Adjust the `batch_size` and the number of months to keep as needed.
 
@@ -52,7 +52,7 @@ Notes:
 The cron endpoint is:
 
 ```
-http(s)://<your-shop>/module/tec_datacleanig/cron?secure_key=<SECURE_KEY>
+http(s)://<your-shop>/module/tec_datacleaning/cron?secure_key=<SECURE_KEY>
 ```
 
 Replace `<SECURE_KEY>` with the value shown in the module configuration (read-only).
@@ -62,13 +62,13 @@ Replace `<SECURE_KEY>` with the value shown in the module configuration (read-on
 This command returns the counts of rows that would be removed (no changes):
 
 ```bash
-curl -s "https://example.com/module/tec_datacleanig/cron?secure_key=YOUR_SECURE_KEY&dry_run=1" | jq .
+curl -s "https://example.com/module/tec_datacleaning/cron?secure_key=YOUR_SECURE_KEY&dry_run=1" | jq .
 ```
 
 ### Example: Run cleaning (non-destructive deletes in batches)
 
 ```bash
-curl -s "https://example.com/module/tec_datacleanig/cron?secure_key=YOUR_SECURE_KEY&batch_size=1000" | jq .
+curl -s "https://example.com/module/tec_datacleaning/cron?secure_key=YOUR_SECURE_KEY&batch_size=1000" | jq .
 ```
 
 ### Truncate examples (fast cleanup, destructive)
@@ -76,13 +76,13 @@ curl -s "https://example.com/module/tec_datacleanig/cron?secure_key=YOUR_SECURE_
 Dry-run for truncate (reports rows that would be removed):
 
 ```bash
-curl -s "https://example.com/module/tec_datacleanig/cron?secure_key=YOUR_SECURE_KEY&truncate=1&dry_run=1" | jq .
+curl -s "https://example.com/module/tec_datacleaning/cron?secure_key=YOUR_SECURE_KEY&truncate=1&dry_run=1" | jq .
 ```
 
 Real truncate (DESTRUCTIVE — empties selected tables, except `ps_log`):
 
 ```bash
-curl -s "https://example.com/module/tec_datacleanig/cron?secure_key=YOUR_SECURE_KEY&truncate=1" | jq .
+curl -s "https://example.com/module/tec_datacleaning/cron?secure_key=YOUR_SECURE_KEY&truncate=1" | jq .
 ```
 
 ---
@@ -92,7 +92,7 @@ curl -s "https://example.com/module/tec_datacleanig/cron?secure_key=YOUR_SECURE_
 You can compute the same deterministic secure key on the server by running (from your PrestaShop root):
 
 ```bash
-php -r "require 'config/config.inc.php'; echo md5(_COOKIE_KEY_ . 'tec_datacleanig') . PHP_EOL;"
+php -r "require 'config/config.inc.php'; echo md5(_COOKIE_KEY_ . 'tec_datacleaning') . PHP_EOL;"
 ```
 
 Use the printed value as `YOUR_SECURE_KEY` in cron calls.

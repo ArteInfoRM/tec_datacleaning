@@ -1,6 +1,6 @@
 # CHANGELOG
 
-All notable changes for the `tec_datacleanig` module (Database Stats Cleaning).
+All notable changes for the `tec_datacleaning` module (Database Stats Cleaning).
 Always review security notes before running destructive operations (TRUNCATE, DELETE).
 
 ## [Unreleased]
@@ -8,7 +8,7 @@ Always review security notes before running destructive operations (TRUNCATE, DE
 
 ## [1.0.3] - 2025-12-17
 ### Added
-- Advanced cron endpoint for automated cleaning: `module/tec_datacleanig/cron` (authenticated via `secure_key`).
+- Advanced cron endpoint for automated cleaning: `module/tec_datacleaning/cron` (authenticated via `secure_key`).
 - Support for `truncate=1` to quickly empty selected statistic tables.
 - `dry_run=1` mode for `truncate` and for cleaning operations: returns counts without modifying the database.
 - Automatic fallback: if `TRUNCATE` is not allowed (permissions or FK constraints), the controller performs a batched `DELETE` (configurable with `batch_size`) until the table is emptied or a safety limit is reached.
@@ -23,7 +23,7 @@ Always review security notes before running destructive operations (TRUNCATE, DE
 
 ### Fixed
 - Removed debug logging that exposed the `secure_key` in plain text from the logs.
-- Resolved issues where the controller did not have a valid module instance: now uses `Module::getInstanceByName('tec_datacleanig')` as a reliable fallback and calls cleanup methods through that instance.
+- Resolved issues where the controller did not have a valid module instance: now uses `Module::getInstanceByName('tec_datacleaning')` as a reliable fallback and calls cleanup methods through that instance.
 
 ### Security
 - The module no longer logs the `secure_key` to system logs.

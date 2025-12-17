@@ -14,13 +14,13 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-class Tec_datacleanig extends Module
+class Tec_datacleaning extends Module
 {
     protected $config_form = false;
 
     public function __construct()
     {
-        $this->name = 'tec_datacleanig';
+        $this->name = 'tec_datacleaning';
         $this->tab = 'quick_bulk_update';
         $this->version = '1.0.3';
         $this->author = 'Tecnoacquisti.com';
@@ -218,9 +218,9 @@ class Tec_datacleanig extends Module
         if (is_file($tplTablestats)) {
             $output .= $this->context->smarty->fetch($tplTablestats);
         } else {
-            $output .= "<!-- tec_datacleanig: missing template tablestats.tpl -->";
+            $output .= "<!-- tec_datacleaning: missing template tablestats.tpl -->";
             if (class_exists('Logger')) {
-                Logger::addLog('tec_datacleanig: tablestats.tpl not found at ' . $tplTablestats, 3);
+                Logger::addLog('tec_datacleaning: tablestats.tpl not found at ' . $tplTablestats, 3);
             }
         }
 
@@ -228,18 +228,18 @@ class Tec_datacleanig extends Module
         if (is_file($tplCron)) {
             $output .= $this->context->smarty->fetch($tplCron);
         } else {
-            $output .= "<!-- tec_datacleanig: missing template cron_instructions.tpl -->";
+            $output .= "<!-- tec_datacleaning: missing template cron_instructions.tpl -->";
             if (class_exists('Logger')) {
-                Logger::addLog('tec_datacleanig: cron_instructions.tpl not found at ' . $tplCron, 3);
+                Logger::addLog('tec_datacleaning: cron_instructions.tpl not found at ' . $tplCron, 3);
             }
         }
 
         if (is_file($tplCopyright)) {
             $output .= $this->context->smarty->fetch($tplCopyright);
         } else {
-            $output .= "<!-- tec_datacleanig: missing template copyright.tpl -->";
+            $output .= "<!-- tec_datacleaning: missing template copyright.tpl -->";
             if (class_exists('Logger')) {
-                Logger::addLog('tec_datacleanig: copyright.tpl not found at ' . $tplCopyright, 3);
+                Logger::addLog('tec_datacleaning: copyright.tpl not found at ' . $tplCopyright, 3);
             }
         }
 

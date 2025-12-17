@@ -24,25 +24,25 @@
 *}
 
 <div class="panel">
-	<h3><i class="icon icon-credit-card"></i> {l s='Database Stats Cleaning' mod='tec_datacleanig'}</h3>
+	<h3><i class="icon icon-credit-card"></i> {l s='Database Stats Cleaning' mod='tec_datacleaning'}</h3>
 	<p>
-		<strong>{l s='Here is my new generic module!' mod='tec_datacleanig'}</strong><br />
-		{l s='Thanks to PrestaShop, now I have a great module.' mod='tec_datacleanig'}<br />
-		{l s='I can configure it using the following configuration form.' mod='tec_datacleanig'}
+		<strong>{l s='Here is my new generic module!' mod='tec_datacleaning'}</strong><br />
+		{l s='Thanks to PrestaShop, now I have a great module.' mod='tec_datacleaning'}<br />
+		{l s='I can configure it using the following configuration form.' mod='tec_datacleaning'}
 	</p>
 	<br />
 	<p>
-		{l s='This module will boost your sales!' mod='tec_datacleanig'}
+		{l s='This module will boost your sales!' mod='tec_datacleaning'}
 	</p>
 </div>
 
 <div class="panel">
-	<h3><i class="icon icon-tags"></i> {l s='Documentation' mod='tec_datacleanig'}</h3>
+	<h3><i class="icon icon-tags"></i> {l s='Documentation' mod='tec_datacleaning'}</h3>
 	<p>
-		&raquo; {l s='You can get a PDF documentation to configure this module' mod='tec_datacleanig'} :
+		&raquo; {l s='You can get a PDF documentation to configure this module' mod='tec_datacleaning'} :
 		<ul>
-			<li><a href="#" target="_blank">{l s='English' mod='tec_datacleanig'}</a></li>
-			<li><a href="#" target="_blank">{l s='French' mod='tec_datacleanig'}</a></li>
+			<li><a href="#" target="_blank">{l s='English' mod='tec_datacleaning'}</a></li>
+			<li><a href="#" target="_blank">{l s='French' mod='tec_datacleaning'}</a></li>
 		</ul>
 	</p>
 </div>

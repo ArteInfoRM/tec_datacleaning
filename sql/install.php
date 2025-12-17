@@ -25,9 +25,9 @@
 */
 $sql = array();
 
-$sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'tec_datacleanig` (
-    `id_tec_datacleanig` int(11) NOT NULL AUTO_INCREMENT,
-    PRIMARY KEY  (`id_tec_datacleanig`)
+$sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'tec_datacleaning` (
+    `id_tec_datacleaning` int(11) NOT NULL AUTO_INCREMENT,
+    PRIMARY KEY  (`id_tec_datacleaning`)
 ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
 
 foreach ($sql as $query) {

@@ -1,14 +1,14 @@
 <?php
 /**
-*  2009-2023 Arte e Informatica
-*
-*  For support feel free to contact us on our website at http://www.arteinformatica.eu
-*
-*  @author    Arte e Informatica <admin@arteinformatica.eu>
-*  @copyright 2009-2023 Arte e Informatica
-*  @version   0.1
-*  @license   One Paid Licence By WebSite Using This Module. No Rent. No Sell. No Share.
-*/
+ *  2009-2025 Tecnoacquisti.com
+ *
+ *  For support feel free to contact us on our website at http://www.tecnoacquisti.com
+ *
+ *  @author    Arte e Informatica <helpdesk@tecnoacquisti.com>
+ *  @copyright 2009-2025 Arte e Informatica
+ *  @license   One Paid Licence By WebSite Using This Module. No Rent. No Sell. No Share.
+ *  @version   1.0.3
+ */
 
 header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
 header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');

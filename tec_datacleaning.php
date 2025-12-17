@@ -56,7 +56,6 @@ class Tec_datacleaning extends Module
         // Default selected tables: use the allowed tables list
         $defaultTables = $this->getAllowedTables();
         if (!empty($defaultTables)) {
-            // Use JSON for safe persistence instead of serialize()
             Configuration::updateValue('TEC_DATACLEANIG_SELECTED_TABLES', json_encode(array_values($defaultTables)));
         }
 

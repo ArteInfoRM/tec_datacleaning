@@ -1,7 +1,14 @@
 <?php
-
-use PrestaShop\PrestaShop\Core\Module\ModuleManagerBuilder;
-
+/**
+ *  2009-2025 Tecnoacquisti.com
+ *
+ *  For support feel free to contact us on our website at http://www.tecnoacquisti.com
+ *
+ *  @author    Arte e Informatica <helpdesk@tecnoacquisti.com>
+ *  @copyright 2009-2025 Arte e Informatica
+ *  @license   One Paid Licence By WebSite Using This Module. No Rent. No Sell. No Share.
+ *  @version   1.0.3
+ */
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -20,11 +27,10 @@ class Tec_datacleaningCronModuleFrontController extends ModuleFrontController
         if (class_exists('Module')) {
             $moduleInstance = Module::getInstanceByName('tec_datacleaning');
         }
-        $moduleName = ($moduleInstance && !empty($moduleInstance->name)) ? $moduleInstance->name : 'tec_datacleaning';
 
         $expectedToken = '';
         // Prefer module-provided secure key if module instance is available and exposes the helper
-        if ($moduleInstance && method_exists($moduleInstance, 'computeModuleSecureKey')) {
+        if (is_object($moduleInstance) && method_exists($moduleInstance, 'computeModuleSecureKey')) {
             try {
                 $expectedToken = $moduleInstance->computeModuleSecureKey();
             } catch (Exception $e) {
@@ -93,11 +99,10 @@ class Tec_datacleaningCronModuleFrontController extends ModuleFrontController
 
             // Get allowed tables from module if possible for safety
             $allowedTables = array();
-            if (isset($this->module) && is_object($this->module) && method_exists($this->module, 'getAllowedTables')) {
-                $allowedTables = $this->module->getAllowedTables();
-            } elseif (class_exists('Module')) {
+            // Use the module instance obtained by name as the authoritative source for allowed tables
+            if (class_exists('Module')) {
                 $mod = Module::getInstanceByName('tec_datacleaning');
-                if ($mod && method_exists($mod, 'getAllowedTables')) {
+                if (is_object($mod) && method_exists($mod, 'getAllowedTables')) {
                     $allowedTables = $mod->getAllowedTables();
                 }
             }
@@ -237,12 +242,12 @@ class Tec_datacleaningCronModuleFrontController extends ModuleFrontController
             exit;
         }
 
-        // Use module instance if available to call cleaning methods
-        $moduleCaller = $moduleInstance ? $moduleInstance : (isset($this->module) ? $this->module : null);
+        // Use the module instance obtained by name as the caller (do not reference $this->module to avoid static analysis warnings)
+        $moduleCaller = $moduleInstance;
 
         $results = array();
         foreach ($selected as $tbl) {
-            if ($moduleCaller && method_exists($moduleCaller, 'cleanOldData')) {
+            if (is_object($moduleCaller) && method_exists($moduleCaller, 'cleanOldData')) {
                 $res = $moduleCaller->cleanOldData($months, $tbl, array('dry_run' => $dryRun, 'batch_size' => $batchSize));
             } else {
                 $res = array('success' => false, 'message' => 'Module instance not available');
@@ -251,7 +256,7 @@ class Tec_datacleaningCronModuleFrontController extends ModuleFrontController
         }
 
         // Run orphan cleanup
-        if ($moduleCaller && method_exists($moduleCaller, 'cleanOrphanedData')) {
+        if (is_object($moduleCaller) && method_exists($moduleCaller, 'cleanOrphanedData')) {
             $orphanRes = $moduleCaller->cleanOrphanedData();
         } else {
             $orphanRes = array('success' => false, 'message' => 'Module instance not available');

@@ -6,7 +6,7 @@ Always review security notes before running destructive operations (TRUNCATE, DE
 ## [Unreleased]
 - Small improvements and minor bugfixes in progress.
 
-## [1.0.4] - 2025-12-17
+## [1.0.5] - 2025-12-17
 ### Added
 - Admin validation improvements: form now collects validation errors and only persists settings when all validations pass.
 - `computeModuleSecureKey()` helper to compute or provide a persistent `secure_key` deterministically; the helper returns the sentinel `NOKEY` when no key is available.

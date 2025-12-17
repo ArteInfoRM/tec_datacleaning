@@ -12,17 +12,17 @@
 *}
 <div class="panel">
     <div class="panel-heading">
-        <i class="icon-table"></i> {$module->displayName|escape:'html':'UTF-8'} - {$module->l('Table Statistics')}
+        <i class="icon-table"></i> {$module->displayName|escape:'html':'UTF-8'} - {l s='Table Statistics' mod='tec_datacleaning'}
     </div>
     <div class="table-responsive">
         <table class="table table-hover">
             <thead>
             <tr>
-                <th>{$module->l('Table Name')}</th>
-                <th>{$module->l('Record Count')}</th>
-                <th>{$module->l('Size (MB)')}</th>
-                <th>{$module->l('Oldest Data Date')}</th>
-                <th>{$module->l('Actions')}</th>
+                <th>{l s='Table Name' mod='tec_datacleaning'}</th>
+                <th>{l s='Record Count' mod='tec_datacleaning'}</th>
+                <th>{l s='Size (MB)' mod='tec_datacleaning'}</th>
+                <th>{l s='Oldest Data Date' mod='tec_datacleaning'}</th>
+                <th>{l s='Actions' mod='tec_datacleaning'}</th>
             </tr>
             </thead>
             <tbody>
@@ -37,11 +37,11 @@
                             <input type="hidden" name="table_name" value="{$tableStat.table_name|escape:'html':'UTF-8'}">
                             {if !$tableStat.is_empty}
                                 <button type="submit" name="submitCleanData" class="btn btn-danger btn-sm">
-                                    <i class="icon-trash"></i> {$module->l('Clean')}
+                                    <i class="icon-trash"></i> {l s='Clean' mod='tec_datacleaning'}
                                 </button>
                             {else}
                                 <button type="button" class="btn btn-danger btn-sm" disabled>
-                                    <i class="icon-trash"></i> {$module->l('Clean')}
+                                    <i class="icon-trash"></i> {l s='Clean' mod='tec_datacleaning'}
                                 </button>
                             {/if}
                         </form>
@@ -55,12 +55,11 @@
 
 <div class="panel">
     <div class="panel-heading">
-        <i class="icon-cogs"></i> {$module->l('Optimization and Cleaning')}
+        <i class="icon-cogs"></i> {l s='Optimization and Cleaning' mod='tec_datacleaning'}
     </div>
     <form method="post" action="">
         <button type="submit" name="submitCleanOrphanedData" class="btn btn-warning">
-            <i class="icon-broom"></i> {$module->l('Clear Orphaned Data')}
+            <i class="icon-broom"></i> {l s='Clear Orphaned Data' mod='tec_datacleaning'}
         </button>
     </form>
 </div>
-

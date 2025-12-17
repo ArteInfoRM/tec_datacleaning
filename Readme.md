@@ -1,5 +1,8 @@
 # Database Stats Cleaning (Tec Datacleanig)
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Built for PrestaShop](https://img.shields.io/badge/Built%20for-PrestaShop-DF0067?logo=prestashop&logoColor=white)
+
 Tec Datacleanig is a PrestaShop module to safely clean and maintain database tables that contain website statistics (connections, page views, guest records, 404 pages, searches, etc.). It provides automated cron support, a fast TRUNCATE option, and a safe batched DELETE fallback when TRUNCATE cannot be executed.
 
 > Important: TRUNCATE and DELETE are destructive operations. Always run `dry_run` first and take a full database backup before performing destructive operations.
